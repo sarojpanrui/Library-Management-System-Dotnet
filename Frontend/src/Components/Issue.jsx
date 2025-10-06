@@ -18,6 +18,7 @@ const Issue = () => {
     const fetchUsers = async () => {
         try {
             const res = await axios.get("http://localhost:5292/api/Auth/allUser");
+            console.log(res);
             setUsers(res.data.userlist || []);
         } catch (err) {
             console.error("Error fetching users:", err);
@@ -30,7 +31,7 @@ const Issue = () => {
             const res = await axios.get("http://localhost:5292/api/Book/allBook");
             const allBooks = res.data.book || [];
             console.log(allBooks);
-            
+
             setBooks(allBooks);
             setIssuedBooks(allBooks.filter((b) => b.issuedBy)); // issued ones
         } catch (err) {
@@ -50,21 +51,30 @@ const Issue = () => {
             return;
         }
 
-        try {
-            await axios.put(`http://localhost:5292/api/Book/issue/${selectedBook}`, {
-                issuedBy: selectedUser,
-                // copies : copies-1
-            });
+        const token = localStorage.getItem("token");
 
-            toast.success("Book issued successfully")
+        try {
+            await axios.put(
+                `http://localhost:5292/api/Book/issue/${selectedBook}`,
+                { issuedBy: selectedUser }, // ✅ body
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // ✅ config
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            toast.success("Book issued successfully");
             fetchBooks(); // refresh list
             setSelectedBook("");
             setSelectedUser("");
         } catch (err) {
             console.error("Error issuing book:", err);
-            toast.error("Failed to issue book ")
+            toast.error("Failed to issue book");
         }
     };
+
 
     return (
         <div className="p-6">
@@ -87,7 +97,7 @@ const Issue = () => {
                         className="w-full border p-2 rounded"
                     >
                         <option value="">-- Choose User --</option>
-                        {users.map((u) => (
+                        {users.filter(use => use.role !==  "admin").map((u) => (
                             <option key={u.id} value={u.username}>
                                 {u.username} ({u.email})
                             </option>
@@ -104,10 +114,10 @@ const Issue = () => {
                     >
                         <option value="">-- Choose Book --</option>
                         {books
-                            .filter((b) => b.issuedby == null ) // only available copies
+                            .filter((b) => b.issuedby == null) // only available copies
                             .map((b) => (
                                 <option key={b.id} value={b.id}>
-                                    {b.name} by {b.author} 
+                                    {b.name} by {b.author}
                                 </option>
                             ))}
 

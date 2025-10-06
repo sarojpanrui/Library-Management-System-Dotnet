@@ -34,6 +34,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
+        // RoleClaimType = "role_id",
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
@@ -42,7 +43,22 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
+
+    options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Cookies["JwtToken"]; // Cookie name must match
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token;
+                }
+                return Task.CompletedTask;
+            }
+        };
 });
+
+
 
 builder.Services.AddCors(options =>
 {

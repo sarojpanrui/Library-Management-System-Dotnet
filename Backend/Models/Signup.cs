@@ -1,4 +1,4 @@
-namespace  Library.Models;
+namespace Library.Models;
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -20,6 +20,9 @@ public class Signup
 
 
     public string phone { get; set; }
+
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
 
 }
 

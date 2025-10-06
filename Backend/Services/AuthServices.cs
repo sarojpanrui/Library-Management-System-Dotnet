@@ -9,6 +9,8 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+
 
 namespace Library.Services;
 
@@ -49,7 +51,9 @@ public class AuthServices
             new Claim("email", user.email),
             new Claim("userId", user.Id),
             new Claim("username", user.username),
-            new Claim("role_id", ((int)user.role).ToString()),
+            new Claim("role", ((int)user.role).ToString()),
+            
+
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -60,7 +64,7 @@ public class AuthServices
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpiryInMinutes"]!)),
+            expires: DateTime.Now.AddMinutes(double.Parse(_config["Jwt:ExpiryInMinutes"]!)),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -81,9 +85,10 @@ public class AuthServices
         {
             Token = token,
             UserId = userId,
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.Now.AddMinutes(3),
             IsUsed = false,
             IsRevoked = false
+            // Expires = DateTime.Now.
         };
 
         await _refreshTokens.InsertOneAsync(refreshToken);

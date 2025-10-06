@@ -17,27 +17,23 @@ const Login = () => {
         try {
             const response = await axios.post(
                 "http://localhost:5292/api/Auth/login",
-                { email, password },
-                { withCredentials: true }
+                { email, password }
             );
 
             toast.success("Login Successful");
 
             const token = response.data.token;
+            const refreshToken = response.data.refreshToken
+            localStorage.setItem('token', token);
+            localStorage.setItem("refreshToken" , refreshToken);
+
             const payload = JSON.parse(atob(token.split(".")[1]));
-            const role = payload.role_id;
-            
-            localStorage.setItem('payload' , JSON.stringify(payload));
+            localStorage.setItem('payload', JSON.stringify(payload));
 
-
-            if (role == 0) {
-                navigate("/admin");
-            } else if (role == 1) {
-                navigate("/customer");
-            } else {
-                toast.error("Unknown role");
-            }
-
+            const role = parseInt(payload.role);
+            if (role === 0) navigate("/admin");
+            else if (role === 1) navigate("/customer");
+            else toast.error("Unknown role");
 
         } catch (err) {
             toast.error("Invalid email or password");

@@ -1,9 +1,11 @@
 using Library.Models;
 using Library.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Library.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
 
@@ -18,6 +20,8 @@ namespace Library.Controllers
 
 
         [HttpPost("addBook")]
+        [Authorize( Roles = "0")]
+        // [AllowAnonymous]
         public async Task<IActionResult> AddBook(Book book)
         {
             var existing = await _bookServices.GetByName(book.name);
@@ -30,7 +34,7 @@ namespace Library.Controllers
 
 
         [HttpGet("allBook")]
-
+        [AllowAnonymous]
         public async Task<ActionResult> GetAllBook()
         {
             var book = await _bookServices.GetAll();
@@ -40,6 +44,8 @@ namespace Library.Controllers
         }
 
         [HttpDelete("deleteBook/{id}")]
+        [Authorize(Roles = "0")]
+        
         public async Task<ActionResult> DeleteBook(string id)
         {
             await _bookServices.DeleteBook(id);
@@ -48,7 +54,8 @@ namespace Library.Controllers
         }
 
         [HttpPut("issue/{id}")]
-        // [HttpPut("issue/{id}")]
+        // [AllowAnonymous]
+        [Authorize(Roles = "0")]
         public async Task<IActionResult> IssueBook(string id, [FromBody] IssueRequest request)
         {
             if (string.IsNullOrEmpty(request.IssuedBy))
@@ -70,6 +77,9 @@ namespace Library.Controllers
 
 
         [HttpPut("unissue/{id}")]
+        [Authorize(Roles = "0")]
+        // [AllowAnonymous]
+
         public async Task<IActionResult> UnIssueBook(string id)
         {
             if (string.IsNullOrEmpty(id))

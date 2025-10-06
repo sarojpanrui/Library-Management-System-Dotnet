@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
+import api from "../AxiosInstance/api";
 import { useNavigate } from "react-router-dom";
 import {
   FiHome,
@@ -39,17 +40,15 @@ const AdminDashboard = () => {
       navigate(item.path);
     }
   };
-
-  const handleLogout = async () => {
-    try {
-      localStorage.removeItem("payload");
-      await axios.post("http://localhost:5292/api/Auth/logout");
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      navigate("/login");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("payload"); // optional if you stored payload
+    navigate("/login");
+    toast.success("Logged out successfully");
+    // redirect to login page
   };
+
 
   const fetchBook = async () => {
     try {
@@ -77,7 +76,25 @@ const AdminDashboard = () => {
   }, []);
 
   const issuedCount = books.filter(book => book.issuedby).length
-  const memCnt = users.filter(user => user.role !="admin" ).length
+  const memCnt = users.filter(user => user.role != "admin").length
+
+  const recentBooks = [...books]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+
+  const recentUsers = [...users]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5); // get latest 5 users
+
+  const finePerDay = 10; // default fine per day
+
+  const totalFine = books.reduce((acc, book) => {
+    return acc + (book.isOverdue ? (book.overdueDays || 0) * finePerDay : 0);
+  }, 0);
+
+  // console.log(totalFine);
+
+
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -161,8 +178,8 @@ const AdminDashboard = () => {
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition relative">
               <p className="text-gray-500">Total Books</p>
               <h3 className="text-2xl font-bold">{books.length}</h3>
-              <span className="bottom-2 right-2 absolute  p-1" onClick={()=> {navigate("/book")}}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>
+              <span className="bottom-2 right-2 absolute  p-1" onClick={() => { navigate("/book") }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></span>
             </div>
 
 
@@ -170,23 +187,27 @@ const AdminDashboard = () => {
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition relative">
               <p className="text-gray-500">Members</p>
               <h3 className="text-2xl font-bold">{memCnt}</h3>
-              <span className="bottom-2 right-2 absolute  p-1" onClick={()=> {navigate("/customerList")}}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>
+              <span className="bottom-2 right-2 absolute  p-1" onClick={() => { navigate("/customerList") }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></span>
             </div>
 
 
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition relative">
               <p className="text-gray-500">Issued Books</p>
               <h3 className="text-2xl font-bold">
                 {issuedCount}
 
               </h3>
+              <span className="bottom-2 right-2 absolute  p-1" onClick={() => { navigate("/issueList") }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></span>
             </div>
 
 
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-              <p className="text-gray-500">Overdue</p>
-              <h3 className="text-2xl font-bold text-red-500">0</h3>
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-md transition relative">
+              <p className="text-gray-500">Total Fines</p>
+              <h3 className="text-2xl font-bold text-red-500">{totalFine}</h3>
+              <span className="bottom-2 right-2 absolute  p-1" onClick={() => { navigate("/fine") }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link-icon lucide-external-link"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg></span>
             </div>
 
 
@@ -194,22 +215,36 @@ const AdminDashboard = () => {
           </div>
 
           {/* Recent Activity */}
+
+
           <div className="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-            <ul className="space-y-2 text-gray-600">
-              <li>📕 Book "Clean Code" was issued to John Doe</li>
-              <li>👤 New member "Alice Johnson" registered</li>
-              <li>📕 Book "Atomic Habits" was returned</li>
+            <h3 className="text-lg font-semibold mb-4">Recent Added Books</h3>
+            <ul className="space-y-2 text-gray-600 ">
+              {recentBooks.map((book) => (
+                <li key={book._id} className="flex gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-check-icon lucide-book-open-check"><path d="M12 21V7" /><path d="m16 12 2 2 4-4" /><path d="M22 6V4a1 1 0 0 0-1-1h-5a4 4 0 0 0-4 4 4 4 0 0 0-4-4H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6a1 1 0 0 0 1-1v-1.3" /></svg> Book "{book.name}" was added on {new Date(book.createdAt).toLocaleDateString()}
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Chart Placeholder */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Library Overview</h3>
-            <div className="h-48 flex items-center justify-center text-gray-400 border-2 border-dashed rounded-lg">
-              📊 Chart/Analytics will go here
-            </div>
+
+          {/* Recent Members */}
+          <div className="bg-white p-6 rounded-lg shadow mb-6">
+            <h3 className="text-lg font-semibold mb-4">Recently Registered Members</h3>
+            <ul className="space-y-2 text-gray-600">
+              {recentUsers.length === 0 && <li>No recent members</li>}
+              {recentUsers.map((user) => (
+                <li key={user._id} className="flex gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-round-icon lucide-user-round"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg> {user.username} joined on {new Date(user.createdAt).toLocaleDateString()}
+                </li>
+              ))}
+            </ul>
           </div>
+
+
+
+
         </div>
       </div>
     </div>

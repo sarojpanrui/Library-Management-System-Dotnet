@@ -30,6 +30,40 @@ namespace Library.Controllers
             return Ok(new { message = "User registered successfully" });
         }
 
+        // [HttpPost("login")]
+        // public async Task<IActionResult> Login(Login loginData)
+        // {
+        //     var user = await _authServices.GetByEmailAsync(loginData.email);
+        //     if (user == null || !BCrypt.Net.BCrypt.Verify(loginData.password, user.password))
+        //         return Unauthorized(new { message = "Invalid credentials" });
+
+        //     var jwtToken = _authServices.GenerateToken(user);
+        //     var refreshToken = await _authServices.GenerateRefreshToken(user.Id);
+
+        //     // Set refresh token in HTTP-only cookie
+        //     Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
+        //     {
+        //         HttpOnly = false,
+        //         Secure = true,
+        //         SameSite = SameSiteMode.Strict,
+        //         Expires = refreshToken.Expires
+        //     });
+
+        //     Response.Cookies.Append("JwtToken", jwtToken, new CookieOptions
+        //     {
+        //         HttpOnly = true,
+        //         Secure = false,
+        //         SameSite = SameSiteMode.Strict,
+        //         Expires = refreshToken.Expires
+        //     });
+
+
+
+        //     // Return JWT in response body
+        //     return Ok(new { token = jwtToken, message = "Login successful" });
+        // }
+
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(Login loginData)
         {
@@ -40,33 +74,67 @@ namespace Library.Controllers
             var jwtToken = _authServices.GenerateToken(user);
             var refreshToken = await _authServices.GenerateRefreshToken(user.Id);
 
-            // Set refresh token in HTTP-only cookie
-            Response.Cookies.Append("refreshToken", refreshToken.Token, new CookieOptions
+            // Return both tokens in response body
+            return Ok(new
             {
-                HttpOnly = false,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = refreshToken.Expires
+                token = jwtToken,
+                refreshToken = refreshToken.Token,
+                message = "Login successful"
             });
-
-            Response.Cookies.Append("JwtToken", jwtToken, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = refreshToken.Expires
-            });
-
-
-
-            // Return JWT in response body
-            return Ok(new { token = jwtToken, message = "Login successful" });
         }
 
+
+
+        // [HttpPost("refresh-token")]
+        // public async Task<IActionResult> RefreshToken()
+        // {
+        //     var oldRefreshToken = Request.Cookies["refreshToken"];
+        //     if (string.IsNullOrEmpty(oldRefreshToken))
+        //         return Unauthorized(new { message = "No refresh token provided" });
+
+        //     try
+        //     {
+        //         var (newJwt, newRefreshToken) = await _authServices.RefreshJwtTokenAsync(oldRefreshToken);
+
+        //         // Update refresh token cookie
+        //         Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
+        //         {
+        //             HttpOnly = true,
+        //             Secure = false,
+        //             SameSite = SameSiteMode.Strict,
+        //             Expires = newRefreshToken.Expires
+        //         });
+
+        //         return Ok(new { token = newJwt });
+        //     }
+        //     catch
+        //     {
+        //         return Unauthorized(new { message = "Invalid refresh token" });
+        //     }
+        // }
+
+
+        // [HttpPost("refresh-token")]
+        // public async Task<IActionResult> RefreshToken([FromBody] dynamic body)
+        // {
+        //     try
+        //     {
+        //         string refreshToken = body.refreshToken;
+        //         var result = await _authServices.RefreshJwtTokenAsync(refreshToken);
+        //         return Ok(new { token = result.newJwt, refreshToken = result.newRefreshToken });
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         // Send a proper 403 when refresh token invalid or expired
+        //         return StatusCode(403, new { message = "Refresh token invalid or expired", error = ex.Message });
+        //     }
+        // }
+
+
+
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken()
+        public async Task<IActionResult> RefreshToken([FromBody] string oldRefreshToken)
         {
-            var oldRefreshToken = Request.Cookies["refreshToken"];
             if (string.IsNullOrEmpty(oldRefreshToken))
                 return Unauthorized(new { message = "No refresh token provided" });
 
@@ -74,16 +142,8 @@ namespace Library.Controllers
             {
                 var (newJwt, newRefreshToken) = await _authServices.RefreshJwtTokenAsync(oldRefreshToken);
 
-                // Update refresh token cookie
-                Response.Cookies.Append("refreshToken", newRefreshToken.Token, new CookieOptions
-                {
-                    HttpOnly = false,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = newRefreshToken.Expires
-                });
-
-                return Ok(new { token = newJwt });
+                // Return both tokens in response body
+                return Ok(new { token = newJwt, refreshToken = newRefreshToken.Token });
             }
             catch
             {
@@ -91,13 +151,25 @@ namespace Library.Controllers
             }
         }
 
-        [HttpPost("logout")]
-        public IActionResult Logout()
-        {
-            Response.Cookies.Delete("refreshToken");
-            Console.WriteLine(Response.Cookies);
-            return Ok(new { message = "Logged out successfully" });
-        }
+        // [HttpPost("logout")]
+        // public IActionResult Logout()
+        // {
+        //     var cookieOptions = new CookieOptions
+        //     {
+        //         HttpOnly = true,
+        //         Secure = true,
+        //         SameSite = SameSiteMode.Strict,
+        //         Expires = DateTime.UtcNow.AddDays(-1), // set expired in the past
+        //         Path = "/" // Important: path must match cookie path
+        //     };
+
+        //     Response.Cookies.Delete("JwtToken", cookieOptions);
+        //     Response.Cookies.Delete("refreshToken", cookieOptions);
+
+        //     return Ok(new { message = "Logged out successfully" });
+        // }
+
+
 
         [HttpGet("allUser")]
 

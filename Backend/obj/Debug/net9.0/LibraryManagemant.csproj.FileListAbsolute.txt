@@ -112,3 +112,4 @@ E:\dotnet-back\LibraryManagemant\backend\obj\Debug\net9.0\refint\LibraryManagema
 E:\dotnet-back\LibraryManagemant\backend\obj\Debug\net9.0\LibraryManagemant.pdb
 E:\dotnet-back\LibraryManagemant\backend\obj\Debug\net9.0\LibraryManagemant.genruntimeconfig.cache
 E:\dotnet-back\LibraryManagemant\backend\obj\Debug\net9.0\ref\LibraryManagemant.dll
+E:\dotnet-back\LibraryManagemant\backend\obj\Debug\net9.0\LibraryManagemant.sourcelink.json

@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Pagination from "@mui/material/Pagination";
 import Stack from "@mui/material/Stack";
+import toast from "react-hot-toast";
+import api from "../AxiosInstance/api";
 
 const Book = () => {
   const [books, setBooks] = useState([]);
@@ -22,7 +24,7 @@ const Book = () => {
   // Fetch books from API
   const fetchBook = async () => {
     try {
-      const response = await axios.get("http://localhost:5292/api/Book/allBook");
+      const response = await api.get("http://localhost:5292/api/Book/allBook");
       console.log(response)
       setBooks(response.data.book || []);
     } catch (error) {
@@ -42,41 +44,117 @@ const Book = () => {
 
   // Add book handler
   const handleAddBook = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("You must be logged in as an admin to add a book.");
+      return;
+    }
+
     try {
-      await axios.post("http://localhost:5292/api/Book/addBook", newBook);
-      fetchBook(); // refresh table
-      setIsModalOpen(false);
+      const response = await axios.post(
+        "http://localhost:5292/api/Book/addBook",
+        newBook,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // ✅ Success handling
+      toast.success(response.data.message || "Book added successfully!");
+      await fetchBook(); // refresh book list
       setNewBook({ name: "", description: "", author: "", issuedBy: "" });
+      setIsModalOpen(false);
     } catch (error) {
-      console.error("Error adding book:", error);
+      // ✅ Improved error handling
+      if (error.response) {
+        if (error.response.status === 401) {
+          alert("Unauthorized! Please log in again.");
+        } else if (error.response.status === 403) {
+          alert("Forbidden! Only admins can add books.");
+        } else {
+          alert(error.response.data.message || "Error adding book.");
+        }
+      } else {
+        console.error("Network or server error:", error);
+        alert("Network error. Please try again.");
+      }
     }
   };
+
 
   const deleteBook = async (id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this book?");
     if (!confirmDelete) return;
 
+    const token = localStorage.getItem("token"); // or from your auth context/state
+
     try {
-      await axios.delete(`http://localhost:5292/api/Book/deleteBook/${id}`);
+      await axios.delete(
+        `http://localhost:5292/api/Book/deleteBook/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Book delete successfully...")
+
+      // Refresh your list after delete
       fetchBook();
       setBooks((prevBooks) => prevBooks.filter((book) => book._id !== id));
     } catch (error) {
-      console.error("Error deleting book:", error);
+      // ✅ Improved error handling
+      if (error.response) {
+        if (error.response.status === 401) {
+          alert("Unauthorized! Please log in again.");
+        } else if (error.response.status === 403) {
+          alert("Forbidden! Only admins can add books.");
+        } else {
+          alert(error.response.data.message || "Error adding book.");
+        }
+      } else {
+        console.error("Network or server error:", error);
+        alert("Network error. Please try again.");
+      }
     }
   };
+
 
   const unissue = async (id) => {
-    const confirmDelete = window.confirm("Are you sure you want to unissue this book?");
-    if (!confirmDelete) return;
+    const confirmUnissue = window.confirm("Are you sure you want to unissue this book?");
+    if (!confirmUnissue) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to unissue a book.");
+      return;
+    }
 
     try {
-      await axios.put(`http://localhost:5292/api/Book/unissue/${id}`);
-      fetchBook();
-      setBooks((prevBooks) => prevBooks.filter((book) => book._id !== id));
+      await axios.put(
+        `http://localhost:5292/api/Book/unissue/${id}`,
+        {}, // body can be empty if backend doesn't need it
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast.success("Book unissued successfully");
+      fetchBook(); // refresh the book list
     } catch (error) {
-      console.error("Error deleting book:", error);
+      console.error("Error unissuing book:", error);
+      toast.error("Failed to unissue the book");
     }
   };
+
 
   // Pagination logic
   const indexOfLastBook = currentPage * booksPerPage;
@@ -133,6 +211,7 @@ const Book = () => {
               <th className="py-2 px-4 text-left">Issued By</th>
               <th className="py-2 px-4 text-left">Issued Date</th>
               <th className="py-2 px-4 text-left">DueDate</th>
+              <th className="py-2 px-4 text-left">Fine</th>
 
 
 
@@ -179,7 +258,13 @@ const Book = () => {
                     : "-"}
                 </td>
 
-                
+                <td className="py-2 px-4 text-red-400">
+                  {
+                    book.overdueDays * 10
+                  }
+                </td>
+
+
 
 
                 <td className="py-2 px-4">
@@ -224,7 +309,7 @@ const Book = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-96 p-6 shadow-lg relative">
             <h3 className="text-xl font-semibold mb-4">Add New Book</h3>
 
